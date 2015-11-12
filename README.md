@@ -1,9 +1,11 @@
 # Localize
 Scripts for handling Localizable.strings via Google docs
 
-###How to use
+## How to use
 
-Uploading to GoogleDocs:
+### Uploading to GoogleDocs:
+
+
 1. ```chmod +x StringsParser.swift```
 
 
@@ -18,9 +20,19 @@ Uploading to GoogleDocs:
 
 5. Do the translation
 
-Adding the result to your project:
+### Adding the result to your project:
+
+
 1. Google Spreadsheets: File -> Download as -> ```tsv```
+
+
 2. ```chmod +x LocalizeDocParser.swift```
+
+
 3. ```./LocalizeDocParser.swift [path to explored tsv file]```
+
+
 4. The resulting ```*.lproj``` will be located in the script folder
+
+
 5. Paste and replace to your project folder
