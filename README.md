@@ -1,6 +1,8 @@
 # Localize
 Scripts for handling Localizable.strings via Google docs
 
+###How to use
+
 Uploading to GoogleDocs:
 1. ```chmod +x StringsParser.swift```
 2. ```./StringsParser.swift [path to Localizable.strings containing all of the keys]```
