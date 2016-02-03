@@ -2,6 +2,12 @@
 
 import Foundation
 
+enum Platform {
+    case Android, iOS
+}
+
+let platform: Platform = .Android
+
 //Parse google doc
 dump(Process.arguments)
 let fileP = Process.arguments[1]
@@ -27,7 +33,17 @@ for line in splitted {
         if key.hasPrefix("//") {
             langs[i - 1].append(key)
         } else if line[i] != "" {
-            langs[i - 1].append("\"\(key)\" = \"\(line[i])\";")
+            let localization: String
+            switch platform {
+            case .Android:
+                let keyForAndroid = String(key.characters.map {
+                    $0 == " " ? "_" : $0
+                    }).lowercaseString
+                localization = "<string name=\"\(keyForAndroid)\">\(line[i])</string>"
+            case .iOS:
+                localization = "\"\(key)\" = \"\(line[i])\";"
+            }
+            langs[i - 1].append(localization)
         }
     }
 }
@@ -38,10 +54,25 @@ if let dirPath = path.URLByDeletingLastPathComponent?.URLByAppendingPathComponen
         withIntermediateDirectories: true,
         attributes: nil)
     for i in 0..<firstRow.count {
-        let currentDirPath = NSURL(fileURLWithPath: NSFileManager.defaultManager().currentDirectoryPath).URLByAppendingPathComponent("\(firstRow[i]).lproj", isDirectory: true)
+        let dirName: String
+        switch platform {
+        case .Android:
+            dirName = "values-\(firstRow[i])"
+        case .iOS:
+            dirName = "\(firstRow[i]).lproj"
+        }
+        let currentDirPath = dirPath.URLByAppendingPathComponent(dirName, isDirectory: true)
         try! NSFileManager.defaultManager().createDirectoryAtURL(currentDirPath, withIntermediateDirectories: true, attributes: nil)
         let result = langs[i].reduce("") { $0 + $1 + "\n" }
-        let currentFilePath = currentDirPath.URLByAppendingPathComponent("Localizable.strings")
+        
+        let fileName: String
+        switch platform {
+        case .Android:
+            fileName = "strings.xml"
+        case .iOS:
+            fileName = "Localizable.strings"
+        }
+        let currentFilePath = currentDirPath.URLByAppendingPathComponent(fileName)
         result.dataUsingEncoding(NSUTF8StringEncoding)?.writeToURL(currentFilePath, atomically: true)
         
         print(currentFilePath)
