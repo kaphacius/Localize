@@ -6,18 +6,23 @@ enum Platform {
     case Android, iOS
 }
 
+func parsePlatformName(input: String) -> Platform? {
+    let platform: Platform?
+    switch input {
+    case "android":
+        platform = .Android
+    case "ios":
+        platform = .iOS
+    default:
+        platform = nil
+    }
+    return platform
+}
+
 //Parse google doc
 dump(Process.arguments)
 let platformP = Process.arguments[1]
-let platform: Platform
-switch platformP {
-case "android":
-    platform = .Android
-case "ios":
-    platform = .iOS
-default:
-    platform = .iOS
-}
+let platform = parsePlatformName(platformP) ?? .iOS
 let fileP = Process.arguments[2]
 let path = NSURL(fileURLWithPath: fileP)
 let data = NSData(contentsOfURL: path)
@@ -29,18 +34,21 @@ var splitted = lines.map { (string: String) -> [String] in
 
 var langs = [[String]]()
 var firstRow = splitted.removeFirst()
-firstRow.removeFirst()
+firstRow.removeFirst() // "PLATFORM"
+firstRow.removeFirst() // "KEY"
 for lang in firstRow {
     langs.append([String]())
 }
 
 //Split by language
 for line in splitted {
-    let key = line[0]
-    for i in 1..<line.count {
+    let forPlatform = parsePlatformName(line[0])
+    let key = line[1]
+    for i in 2..<line.count {
+        let langIndex = i - 2
         if key.hasPrefix("//") {
-            langs[i - 1].append(key)
-        } else if line[i] != "" {
+            langs[langIndex].append(key)
+        } else if line[i] != "" && (forPlatform == nil || forPlatform! == platform) {
             let localization: String
             switch platform {
             case .Android:
@@ -51,7 +59,7 @@ for line in splitted {
             case .iOS:
                 localization = "\"\(key)\" = \"\(line[i])\";"
             }
-            langs[i - 1].append(localization)
+            langs[langIndex].append(localization)
         }
     }
 }
