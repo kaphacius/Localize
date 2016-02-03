@@ -47,7 +47,15 @@ for line in splitted {
     for i in 2..<line.count {
         let langIndex = i - 2
         if key.hasPrefix("//") {
-            langs[langIndex].append(key)
+            let comment: String
+            switch platform {
+            case .Android:
+                let commentForAndroid = key.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: "/"))
+                comment = "\t<!-- \(commentForAndroid) -->"
+            case .iOS:
+                comment = key
+            }
+            langs[langIndex].append(comment)
         } else if line[i] != "" && (forPlatform == nil || forPlatform! == platform) {
             let localization: String
             switch platform {
@@ -55,12 +63,24 @@ for line in splitted {
                 let keyForAndroid = String(key.characters.map {
                     $0 == " " ? "_" : $0
                     }).lowercaseString
-                localization = "<string name=\"\(keyForAndroid)\">\(line[i])</string>"
+                
+                let valueForAndroid = line[i]
+                    .stringByReplacingOccurrencesOfString("&", withString: "&amp;")
+                    .stringByReplacingOccurrencesOfString("'", withString: "\\'")
+                
+                localization = "\t<string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
             case .iOS:
                 localization = "\"\(key)\" = \"\(line[i])\";"
             }
             langs[langIndex].append(localization)
         }
+    }
+}
+
+if platform == .Android {
+    for i in 0..<langs.count {
+        langs[i].insert("<resources>", atIndex:0)
+        langs[i].insert("</resources>", atIndex:langs[i].count)
     }
 }
 
