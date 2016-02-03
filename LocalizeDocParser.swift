@@ -6,11 +6,19 @@ enum Platform {
     case Android, iOS
 }
 
-let platform: Platform = .Android
-
 //Parse google doc
 dump(Process.arguments)
-let fileP = Process.arguments[1]
+let platformP = Process.arguments[1]
+let platform: Platform
+switch platformP {
+case "android":
+    platform = .Android
+case "ios":
+    platform = .iOS
+default:
+    platform = .iOS
+}
+let fileP = Process.arguments[2]
 let path = NSURL(fileURLWithPath: fileP)
 let data = NSData(contentsOfURL: path)
 let strings = String(data: data!, encoding: NSUTF8StringEncoding)
@@ -49,7 +57,7 @@ for line in splitted {
 }
 
 //Save results
-if let dirPath = path.URLByDeletingLastPathComponent?.URLByAppendingPathComponent("Result") {
+if let dirPath = path.URLByDeletingLastPathComponent?.URLByAppendingPathComponent("Result_\(platform)") {
     try! NSFileManager.defaultManager().createDirectoryAtURL(dirPath,
         withIntermediateDirectories: true,
         attributes: nil)
