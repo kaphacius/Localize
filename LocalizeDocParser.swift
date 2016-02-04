@@ -37,7 +37,15 @@ var firstRow = splitted.removeFirst()
 firstRow.removeFirst() // "PLATFORM"
 firstRow.removeFirst() // "KEY"
 for lang in firstRow {
-    langs.append([String]())
+    var translations = [String]()
+    if platform == .Android {
+        translations.append("<!--")
+        translations.append("  This file was automatically generated from Google Docs")
+        translations.append("  It should not be modified here, update Google Docs instead.")
+        translations.append("-->")
+        translations.append("<resources>")
+    }
+    langs.append(translations)
 }
 
 //Split by language
@@ -51,7 +59,7 @@ for line in splitted {
             switch platform {
             case .Android:
                 let commentForAndroid = key.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: "/"))
-                comment = "\t<!-- \(commentForAndroid) -->"
+                comment = "    <!-- \(commentForAndroid) -->"
             case .iOS:
                 comment = key
             }
@@ -68,7 +76,7 @@ for line in splitted {
                     .stringByReplacingOccurrencesOfString("&", withString: "&amp;")
                     .stringByReplacingOccurrencesOfString("'", withString: "\\'")
                 
-                localization = "\t<string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
+                localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
             case .iOS:
                 localization = "\"\(key)\" = \"\(line[i])\";"
             }
@@ -79,7 +87,6 @@ for line in splitted {
 
 if platform == .Android {
     for i in 0..<langs.count {
-        langs[i].insert("<resources>", atIndex:0)
         langs[i].insert("</resources>", atIndex:langs[i].count)
     }
 }
