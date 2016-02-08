@@ -3,7 +3,7 @@ Scripts for handling Localizable.strings via Google docs
 
 ## How to use
 
-### Uploading to GoogleDocs:
+### Uploading from iOS to GoogleDocs:
 
 
 1. ```chmod +x StringsParser.swift```
@@ -29,10 +29,10 @@ Scripts for handling Localizable.strings via Google docs
 2. ```chmod +x LocalizeDocParser.swift```
 
 
-3. ```./LocalizeDocParser.swift [path to explored tsv file]```
+3. ```./LocalizeDocParser.swift [platform: android or ios] [path to explored tsv file]```
 
 
-4. The resulting ```*.lproj``` will be located in the script folder
+4. The resulting ```*.xml```(android) or ```*.lproj```(iOS) will be located in the script folder: ```Result_[platform]```
 
 
 5. Paste and replace to your project folder
