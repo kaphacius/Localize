@@ -86,7 +86,8 @@ for line in splitted {
                         .URLByAppendingPathComponent(langCode + "-" + rc)
                     try! NSFileManager.defaultManager().createDirectoryAtURL(dirPath!, withIntermediateDirectories: true, attributes: nil)
                     let currentFilePath = dirPath!.URLByAppendingPathComponent(fileName + ".txt")
-                    line[i].dataUsingEncoding(NSUTF8StringEncoding)?.writeToURL(currentFilePath, atomically: true)
+                    let value = line[i].stringByReplacingOccurrencesOfString("\\n", withString: "\n")
+                    value.dataUsingEncoding(NSUTF8StringEncoding)?.writeToURL(currentFilePath, atomically: true)
                     print(currentFilePath)
                 }
             } else {
