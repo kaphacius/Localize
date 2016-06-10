@@ -97,9 +97,17 @@ for line in splitted {
                         $0 == " " ? "_" : $0
                         }).lowercaseString
                     
-                    let valueForAndroid = line[i]
+                    var valueForAndroid = line[i]
                         .stringByReplacingOccurrencesOfString("&", withString: "&amp;")
                         .stringByReplacingOccurrencesOfString("'", withString: "\\'")
+                    
+                    var i = 1
+                    let placeholderForIOS = "%@"
+                    while valueForAndroid.containsString(placeholderForIOS) {
+                        valueForAndroid = valueForAndroid
+                            .stringByReplacingOccurrencesOfString(placeholderForIOS, withString: "%\(i)$s", range: valueForAndroid.rangeOfString(placeholderForIOS))
+                        i += 1
+                    }
                     
                     localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
                 case .iOS:
