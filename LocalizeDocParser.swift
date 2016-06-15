@@ -66,21 +66,55 @@ for line in splitted {
             langs[langIndex].append(comment)
         } else if line[i] != "" && (forPlatform == nil || forPlatform! == platform) {
             let localization: String
-            switch platform {
-            case .Android:
-                let keyForAndroid = String(key.characters.map {
-                    $0 == " " ? "_" : $0
-                    }).lowercaseString
+            if platform == .Android && key.hasPrefix("google_play_") {
+                let fileName = key.stringByReplacingOccurrencesOfString("google_play_", withString: "")
+                let langCode = firstRow[langIndex]
+                let regionCode: String?
+                switch langCode {
+                    case "en": regionCode = "GB"
+                    case "nl": regionCode = "NL"
+                    case "de": regionCode = "DE"
+                    case "fr": regionCode = "FR"
+                    default: regionCode = nil
+                }
                 
-                let valueForAndroid = line[i]
-                    .stringByReplacingOccurrencesOfString("&", withString: "&amp;")
-                    .stringByReplacingOccurrencesOfString("'", withString: "\\'")
-                
-                localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
-            case .iOS:
-                localization = "\"\(key)\" = \"\(line[i])\";"
+                if let rc = regionCode {
+                    let dirPath = path.URLByDeletingLastPathComponent?
+                        .URLByAppendingPathComponent("fastlane")
+                        .URLByAppendingPathComponent("metadata")
+                        .URLByAppendingPathComponent("android")
+                        .URLByAppendingPathComponent(langCode + "-" + rc)
+                    try! NSFileManager.defaultManager().createDirectoryAtURL(dirPath!, withIntermediateDirectories: true, attributes: nil)
+                    let currentFilePath = dirPath!.URLByAppendingPathComponent(fileName + ".txt")
+                    let value = line[i].stringByReplacingOccurrencesOfString("\\n", withString: "\n")
+                    value.dataUsingEncoding(NSUTF8StringEncoding)?.writeToURL(currentFilePath, atomically: true)
+                    print(currentFilePath)
+                }
+            } else {
+                switch platform {
+                case .Android:
+                    let keyForAndroid = String(key.characters.map {
+                        $0 == " " ? "_" : $0
+                        }).lowercaseString
+                    
+                    var valueForAndroid = line[i]
+                        .stringByReplacingOccurrencesOfString("&", withString: "&amp;")
+                        .stringByReplacingOccurrencesOfString("'", withString: "\\'")
+                    
+                    var i = 1
+                    let placeholderForIOS = "%@"
+                    while valueForAndroid.containsString(placeholderForIOS) {
+                        valueForAndroid = valueForAndroid
+                            .stringByReplacingOccurrencesOfString(placeholderForIOS, withString: "%\(i)$s", range: valueForAndroid.rangeOfString(placeholderForIOS))
+                        i += 1
+                    }
+                    
+                    localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
+                case .iOS:
+                    localization = "\"\(key)\" = \"\(line[i])\";"
+                }
+                langs[langIndex].append(localization)
             }
-            langs[langIndex].append(localization)
         }
     }
 }
@@ -93,9 +127,7 @@ if platform == .Android {
 
 //Save results
 if let dirPath = path.URLByDeletingLastPathComponent?.URLByAppendingPathComponent("Result_\(platform)") {
-    try! NSFileManager.defaultManager().createDirectoryAtURL(dirPath,
-        withIntermediateDirectories: true,
-        attributes: nil)
+    try! NSFileManager.defaultManager().createDirectoryAtURL(dirPath, withIntermediateDirectories: true, attributes: nil)
     for i in 0..<firstRow.count {
         let dirName: String
         switch platform {
