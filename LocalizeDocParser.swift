@@ -6,7 +6,7 @@ enum Platform {
     case Android, iOS
 }
 
-func parsePlatformName(input: String) -> Platform? {
+func parseOutputPlatformName(input: String) -> Platform? {
     let platform: Platform?
     switch input {
     case "android":
@@ -19,10 +19,25 @@ func parsePlatformName(input: String) -> Platform? {
     return platform
 }
 
+func parseForPlatformName(input: String) -> [Platform] {
+    let platform: [Platform]
+    switch input {
+    case "android":
+        platform = [.Android]
+    case "ios":
+        platform = [.iOS]
+    case "not used":
+        platform = []
+    default:
+        platform = [.Android, .iOS]
+    }
+    return platform
+}
+
 //Parse google doc
 dump(Process.arguments)
 let platformP = Process.arguments[1]
-let platform = parsePlatformName(platformP) ?? .iOS
+let platform = parseOutputPlatformName(platformP) ?? .iOS
 let fileP = Process.arguments[2]
 let path = NSURL(fileURLWithPath: fileP)
 let data = NSData(contentsOfURL: path)
@@ -50,7 +65,7 @@ for lang in firstRow {
 
 //Split by language
 for line in splitted {
-    let forPlatform = parsePlatformName(line[0])
+    let forPlatform = parseForPlatformName(line[0])
     let key = line[1]
     for i in 2..<line.count {
         let langIndex = i - 2
@@ -64,7 +79,7 @@ for line in splitted {
                 comment = key
             }
             langs[langIndex].append(comment)
-        } else if line[i] != "" && (forPlatform == nil || forPlatform! == platform) {
+        } else if line[i] != "" && (forPlatform.contains(platform)) {
             let localization: String
             if platform == .Android && key.hasPrefix("google_play_") {
                 let fileName = key.stringByReplacingOccurrencesOfString("google_play_", withString: "")
