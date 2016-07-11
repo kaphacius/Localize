@@ -32,7 +32,7 @@ Scripts for handling Localizable.strings via Google docs
 3. ```./LocalizeDocParser.swift [platform: android or ios] [path to exported tsv file]```
 
 
-4. The resulting ```*.xml```(android) or ```*.lproj```(iOS) will be located in the script folder: ```Result_[platform]```
+4. The resulting ```*.xml```(android) or ```*.lproj```(iOS) will be located in [path to exported tsv file] folder: ```Result_[platform]```
 
 
 5. Paste and replace to your project folder
