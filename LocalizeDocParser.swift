@@ -126,7 +126,8 @@ for line in splitted {
                     
                     localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
                 case .iOS:
-                    localization = "\"\(key)\" = \"\(line[i])\";"
+                    let escaped = line[i].stringByReplacingOccurrencesOfString("\"", withString: "\\\"")
+                    localization = "\"\(key)\" = \"\(escaped)\";"
                 }
                 langs[langIndex].append(localization)
             }
