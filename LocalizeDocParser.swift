@@ -34,24 +34,23 @@ func parseForPlatformName(input: String) -> [Platform] {
     return platform
 }
 
-//Parse google doc
-dump(Process.arguments)
-let platformP = Process.arguments[1]
-let platform = parseOutputPlatformName(platformP) ?? .iOS
-let fileP = Process.arguments[2]
+dump(CommandLine.arguments)
+let platformP = CommandLine.arguments[1]
+let platform = parseOutputPlatformName(input: platformP) ?? .iOS
+let fileP = CommandLine.arguments[2]
 let path = NSURL(fileURLWithPath: fileP)
-let data = NSData(contentsOfURL: path)
-let strings = String(data: data!, encoding: NSUTF8StringEncoding)
-let lines = strings!.componentsSeparatedByString("\n")
+let data = NSData(contentsOf: path as URL)
+let strings = String(data: data! as Data, encoding: String.Encoding.utf8)
+let lines = strings!.components(separatedBy: "\n")
 var splitted = lines.map { (string: String) -> [String] in
-    return string.stringByTrimmingCharactersInSet(NSCharacterSet.newlineCharacterSet()).componentsSeparatedByString("\t")
+    return string.trimmingCharacters(in: CharacterSet.newlines).components(separatedBy: "\t")
 }
 
 var langs = [[String]]()
 var firstRow = splitted.removeFirst()
 firstRow.removeFirst() // "PLATFORM"
 firstRow.removeFirst() // "KEY"
-for lang in firstRow {
+for _ in firstRow {
     var translations = [String]()
     if platform == .Android {
         translations.append("<!--")
@@ -65,7 +64,7 @@ for lang in firstRow {
 
 //Split by language
 for line in splitted {
-    let forPlatform = parseForPlatformName(line[0])
+    let forPlatform = parseForPlatformName(input: line[0])
     let key = line[1]
     for i in 2..<line.count {
         let langIndex = i - 2
@@ -73,7 +72,7 @@ for line in splitted {
             let comment: String
             switch platform {
             case .Android:
-                let commentForAndroid = key.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: "/"))
+                let commentForAndroid = key.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 comment = "    <!-- \(commentForAndroid) -->"
             case .iOS:
                 comment = key
@@ -82,27 +81,27 @@ for line in splitted {
         } else if line[i] != "" && (forPlatform.contains(platform)) {
             let localization: String
             if platform == .Android && key.hasPrefix("google_play_") {
-                let fileName = key.stringByReplacingOccurrencesOfString("google_play_", withString: "")
+                let fileName = key.replacingOccurrences(of: "google_play_", with: "")
                 let langCode = firstRow[langIndex]
                 let regionCode: String?
                 switch langCode {
-                    case "en": regionCode = "GB"
-                    case "nl": regionCode = "NL"
-                    case "de": regionCode = "DE"
-                    case "fr": regionCode = "FR"
-                    default: regionCode = nil
+                case "en": regionCode = "GB"
+                case "nl": regionCode = "NL"
+                case "de": regionCode = "DE"
+                case "fr": regionCode = "FR"
+                default: regionCode = nil
                 }
-                
+
                 if let rc = regionCode {
-                    let dirPath = path.URLByDeletingLastPathComponent?
-                        .URLByAppendingPathComponent("fastlane")
-                        .URLByAppendingPathComponent("metadata")
-                        .URLByAppendingPathComponent("android")
-                        .URLByAppendingPathComponent(langCode + "-" + rc)
-                    try! NSFileManager.defaultManager().createDirectoryAtURL(dirPath!, withIntermediateDirectories: true, attributes: nil)
-                    let currentFilePath = dirPath!.URLByAppendingPathComponent(fileName + ".txt")
-                    let value = line[i].stringByReplacingOccurrencesOfString("\\n", withString: "\n")
-                    value.dataUsingEncoding(NSUTF8StringEncoding)?.writeToURL(currentFilePath, atomically: true)
+                    let dirPath = path.deletingLastPathComponent?
+                        .appendingPathComponent("fastlane")
+                        .appendingPathComponent("metadata")
+                        .appendingPathComponent("android")
+                        .appendingPathComponent(langCode + "-" + rc)
+                    try! FileManager.default.createDirectory(at: dirPath!, withIntermediateDirectories: true, attributes: nil)
+                    let currentFilePath = dirPath!.appendingPathComponent(fileName + ".txt")
+                    let value = line[i].replacingOccurrences(of: "\\n", with: "\n")
+                    try! value.data(using: String.Encoding.utf8)?.write(to: currentFilePath, options: [])
                     print(currentFilePath)
                 }
             } else {
@@ -110,23 +109,23 @@ for line in splitted {
                 case .Android:
                     let keyForAndroid = String(key.characters.map {
                         $0 == " " ? "_" : $0
-                        }).lowercaseString
-                    
+                    }).lowercased()
+
                     var valueForAndroid = line[i]
-                        .stringByReplacingOccurrencesOfString("&", withString: "&amp;")
-                        .stringByReplacingOccurrencesOfString("'", withString: "\\'")
-                    
+                        .replacingOccurrences(of: "&", with: "&amp;")
+                        .replacingOccurrences(of: "'", with: "\\'")
+
                     var i = 1
                     let placeholderForIOS = "%@"
-                    while valueForAndroid.containsString(placeholderForIOS) {
+                    while valueForAndroid.contains(placeholderForIOS) {
                         valueForAndroid = valueForAndroid
-                            .stringByReplacingOccurrencesOfString(placeholderForIOS, withString: "%\(i)$s", range: valueForAndroid.rangeOfString(placeholderForIOS))
+                            .replacingOccurrences(of: placeholderForIOS, with: "%\(i)$s", range: valueForAndroid.range(of: placeholderForIOS))
                         i += 1
                     }
-                    
+
                     localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
                 case .iOS:
-                    let escaped = line[i].stringByReplacingOccurrencesOfString("\"", withString: "\\\"")
+                    let escaped = line[i].replacingOccurrences(of: "\"", with: "\\\"")
                     localization = "\"\(key)\" = \"\(escaped)\";"
                 }
                 langs[langIndex].append(localization)
@@ -137,13 +136,13 @@ for line in splitted {
 
 if platform == .Android {
     for i in 0..<langs.count {
-        langs[i].insert("</resources>", atIndex:langs[i].count)
+        langs[i].insert("</resources>", at:langs[i].count)
     }
 }
 
 //Save results
-if let dirPath = path.URLByDeletingLastPathComponent?.URLByAppendingPathComponent("Result_\(platform)") {
-    try! NSFileManager.defaultManager().createDirectoryAtURL(dirPath, withIntermediateDirectories: true, attributes: nil)
+if let dirPath = path.deletingLastPathComponent?.appendingPathComponent("Result_\(platform)") {
+    try! FileManager.default.createDirectory(at: dirPath, withIntermediateDirectories: true, attributes: nil)
     for i in 0..<firstRow.count {
         let dirName: String
         switch platform {
@@ -152,10 +151,10 @@ if let dirPath = path.URLByDeletingLastPathComponent?.URLByAppendingPathComponen
         case .iOS:
             dirName = "\(firstRow[i]).lproj"
         }
-        let currentDirPath = dirPath.URLByAppendingPathComponent(dirName, isDirectory: true)
-        try! NSFileManager.defaultManager().createDirectoryAtURL(currentDirPath, withIntermediateDirectories: true, attributes: nil)
+        let currentDirPath = dirPath.appendingPathComponent(dirName, isDirectory: true)
+        try! FileManager.default.createDirectory(at: currentDirPath, withIntermediateDirectories: true, attributes: nil)
         let result = langs[i].reduce("") { $0 + $1 + "\n" }
-        
+
         let fileName: String
         switch platform {
         case .Android:
@@ -163,9 +162,9 @@ if let dirPath = path.URLByDeletingLastPathComponent?.URLByAppendingPathComponen
         case .iOS:
             fileName = "Localizable.strings"
         }
-        let currentFilePath = currentDirPath.URLByAppendingPathComponent(fileName)
-        result.dataUsingEncoding(NSUTF8StringEncoding)?.writeToURL(currentFilePath, atomically: true)
-        
+        let currentFilePath = currentDirPath.appendingPathComponent(fileName)
+        try! result.data(using: String.Encoding.utf8)?.write(to: currentFilePath, options: [])
+
         print(currentFilePath)
     }
 }
