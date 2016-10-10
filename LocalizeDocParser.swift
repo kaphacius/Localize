@@ -105,16 +105,16 @@ for line in splitted {
                     print(currentFilePath)
                 }
             } else {
+                let escaped = line[i].replacingOccurrences(of: "\"", with: "\\\"")
                 switch platform {
                 case .Android:
                     let keyForAndroid = String(key.characters.map {
                         $0 == " " ? "_" : $0
-                    }).lowercased()
-
-                    var valueForAndroid = line[i]
+                        }).lowercased()
+                    
+                    var valueForAndroid = escaped
                         .replacingOccurrences(of: "&", with: "&amp;")
                         .replacingOccurrences(of: "'", with: "\\'")
-
                     var i = 1
                     let placeholderForIOS = "%@"
                     while valueForAndroid.contains(placeholderForIOS) {
@@ -125,7 +125,6 @@ for line in splitted {
 
                     localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
                 case .iOS:
-                    let escaped = line[i].replacingOccurrences(of: "\"", with: "\\\"")
                     localization = "\"\(key)\" = \"\(escaped)\";"
                 }
                 langs[langIndex].append(localization)
