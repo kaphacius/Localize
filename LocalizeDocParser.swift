@@ -2,41 +2,12 @@
 
 import Foundation
 
-enum Platform {
-    case Android, iOS
-}
-
-func parseOutputPlatformName(input: String) -> Platform? {
-    let platform: Platform?
-    switch input {
-    case "android":
-        platform = .Android
-    case "ios":
-        platform = .iOS
-    default:
-        platform = nil
-    }
-    return platform
-}
-
-func parseForPlatformName(input: String) -> [Platform] {
-    let platform: [Platform]
-    switch input {
-    case "android":
-        platform = [.Android]
-    case "ios":
-        platform = [.iOS]
-    case "not used":
-        platform = []
-    default:
-        platform = [.Android, .iOS]
-    }
-    return platform
+func parseForPlatformName(input: String) -> [String] {
+    return input.components(separatedBy: ",").map { $0.replacingOccurrences(of: " ", with: "") }
 }
 
 dump(CommandLine.arguments)
-let platformP = CommandLine.arguments[1]
-let platform = parseOutputPlatformName(input: platformP) ?? .iOS
+let platform = CommandLine.arguments[1]
 let fileP = CommandLine.arguments[2]
 let path = NSURL(fileURLWithPath: fileP)
 let data = NSData(contentsOf: path as URL)
@@ -52,7 +23,7 @@ firstRow.removeFirst() // "PLATFORM"
 firstRow.removeFirst() // "KEY"
 for _ in firstRow {
     var translations = [String]()
-    if platform == .Android {
+    if platform.uppercased().contains("ANDROID") {
         translations.append("<!--")
         translations.append("  This file was automatically generated from Google Docs")
         translations.append("  It should not be modified here, update Google Docs instead.")
@@ -69,20 +40,18 @@ for line in splitted {
     for i in 2..<line.count {
         let langIndex = i - 2
         if key.hasPrefix("//") {
-            let comment: String
-            switch platform {
-            case .Android:
+            var comment: String = ""
+            if platform.uppercased().contains("ANDROID") {
                 let commentForAndroid = key.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 comment = "    <!-- \(commentForAndroid) -->"
-            case .iOS:
+            } else if platform.uppercased().contains("IOS") {
                 comment = key
             }
             langs[langIndex].append(comment)
         } else if line[i] != "" && (forPlatform.contains(platform)) {
-            let localization: String
+            var localization: String = ""
             let escaped = line[i].replacingOccurrences(of: "\"", with: "\\\"")
-            switch platform {
-            case .Android:
+            if platform.uppercased().contains("ANDROID") {
                 let keyForAndroid = String(key.characters.map {
                     $0 == " " ? "_" : $0
                 }).lowercased()
@@ -99,7 +68,7 @@ for line in splitted {
                 }
                 
                 localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
-            case .iOS:
+            } else if platform.uppercased().contains("IOS") {
                 localization = "\"\(key)\" = \"\(escaped)\";"
             }
             langs[langIndex].append(localization)
@@ -107,7 +76,7 @@ for line in splitted {
     }
 }
 
-if platform == .Android {
+if platform.uppercased().contains("ANDROID") {
     for i in 0..<langs.count {
         langs[i].insert("</resources>", at:langs[i].count)
     }
@@ -117,22 +86,20 @@ if platform == .Android {
 if let dirPath = path.deletingLastPathComponent?.appendingPathComponent("Result_\(platform)") {
     try! FileManager.default.createDirectory(at: dirPath, withIntermediateDirectories: true, attributes: nil)
     for i in 0..<firstRow.count {
-        let dirName: String
-        switch platform {
-        case .Android:
+        var dirName: String = firstRow[i]
+        if platform.uppercased().contains("ANDROID") {
             dirName = "values-\(firstRow[i])"
-        case .iOS:
+        } else if platform.uppercased().contains("IOS") {
             dirName = "\(firstRow[i]).lproj"
         }
         let currentDirPath = dirPath.appendingPathComponent(dirName, isDirectory: true)
         try! FileManager.default.createDirectory(at: currentDirPath, withIntermediateDirectories: true, attributes: nil)
         let result = langs[i].reduce("") { $0 + $1 + "\n" }
 
-        let fileName: String
-        switch platform {
-        case .Android:
+        var fileName: String = "strings.txt"
+        if platform.uppercased().contains("ANDROID") {
             fileName = "strings.xml"
-        case .iOS:
+        } else if platform.uppercased().contains("IOS") {
             fileName = "Localizable.strings"
         }
         let currentFilePath = currentDirPath.appendingPathComponent(fileName)
