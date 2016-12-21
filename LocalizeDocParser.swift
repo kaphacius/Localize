@@ -80,55 +80,29 @@ for line in splitted {
             langs[langIndex].append(comment)
         } else if line[i] != "" && (forPlatform.contains(platform)) {
             let localization: String
-            if platform == .Android && key.hasPrefix("google_play_") {
-                let fileName = key.replacingOccurrences(of: "google_play_", with: "")
-                let langCode = firstRow[langIndex]
-                let regionCode: String?
-                switch langCode {
-                case "en": regionCode = "GB"
-                case "nl": regionCode = "NL"
-                case "de": regionCode = "DE"
-                case "fr": regionCode = "FR"
-                default: regionCode = nil
+            let escaped = line[i].replacingOccurrences(of: "\"", with: "\\\"")
+            switch platform {
+            case .Android:
+                let keyForAndroid = String(key.characters.map {
+                    $0 == " " ? "_" : $0
+                }).lowercased()
+                
+                var valueForAndroid = escaped
+                    .replacingOccurrences(of: "&", with: "&amp;")
+                    .replacingOccurrences(of: "'", with: "\\'")
+                var i = 1
+                let placeholderForIOS = "%@"
+                while valueForAndroid.contains(placeholderForIOS) {
+                    valueForAndroid = valueForAndroid
+                        .replacingOccurrences(of: placeholderForIOS, with: "%\(i)$s", range: valueForAndroid.range(of: placeholderForIOS))
+                    i += 1
                 }
-
-                if let rc = regionCode {
-                    let dirPath = path.deletingLastPathComponent?
-                        .appendingPathComponent("fastlane")
-                        .appendingPathComponent("metadata")
-                        .appendingPathComponent("android")
-                        .appendingPathComponent(langCode + "-" + rc)
-                    try! FileManager.default.createDirectory(at: dirPath!, withIntermediateDirectories: true, attributes: nil)
-                    let currentFilePath = dirPath!.appendingPathComponent(fileName + ".txt")
-                    let value = line[i].replacingOccurrences(of: "\\n", with: "\n")
-                    try! value.data(using: String.Encoding.utf8)?.write(to: currentFilePath, options: [])
-                    print(currentFilePath)
-                }
-            } else {
-                let escaped = line[i].replacingOccurrences(of: "\"", with: "\\\"")
-                switch platform {
-                case .Android:
-                    let keyForAndroid = String(key.characters.map {
-                        $0 == " " ? "_" : $0
-                        }).lowercased()
-                    
-                    var valueForAndroid = escaped
-                        .replacingOccurrences(of: "&", with: "&amp;")
-                        .replacingOccurrences(of: "'", with: "\\'")
-                    var i = 1
-                    let placeholderForIOS = "%@"
-                    while valueForAndroid.contains(placeholderForIOS) {
-                        valueForAndroid = valueForAndroid
-                            .replacingOccurrences(of: placeholderForIOS, with: "%\(i)$s", range: valueForAndroid.range(of: placeholderForIOS))
-                        i += 1
-                    }
-
-                    localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
-                case .iOS:
-                    localization = "\"\(key)\" = \"\(escaped)\";"
-                }
-                langs[langIndex].append(localization)
+                
+                localization = "    <string name=\"\(keyForAndroid)\">\(valueForAndroid)</string>"
+            case .iOS:
+                localization = "\"\(key)\" = \"\(escaped)\";"
             }
+            langs[langIndex].append(localization)
         }
     }
 }
